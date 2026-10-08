@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>배달해서 살아남기</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+* { image-rendering: pixelated; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin:0; padding:0; overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  overscroll-behavior-y: contain;
+}
+body{font-family:'맑은 고딕',sans-serif;background:#1e1e2e;color:#eee;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));}
+.pixel-font{font-family:'Press Start 2P',monospace}
+button{ touch-action: manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+
+#titleScreen{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:linear-gradient(to bottom, #2b2b55 0%, #2b2b55 55%, #1a1a2e 55%, #1a1a2e 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;
+}
+#titleScreen .skyline{position:absolute;bottom:0;left:0;width:100%;height:40%;background-image: repeating-linear-gradient(90deg, #0f0f2a 0 30px, #16163a 30px 60px);}
+#titleScreen .stars{position:absolute;top:0;left:0;width:100%;height:55%;background-image: radial-gradient(white 1px, transparent 1px);background-size: 24px 24px; opacity:0.25;}
+#titleScreen h1{z-index:2; color:#ffd93d; font-size:28px; text-align:center;text-shadow:4px 4px 0 #c0392b; margin-bottom:10px;}
+#titleScreen .sub{ z-index:2; color:#aaa; font-size:11px; margin-bottom:30px; font-family:'Press Start 2P',monospace}
+#titleScreen button{z-index:2; font-family:'Press Start 2P',monospace; font-size:12px;background:#3a7bd5; color:#fff; border:4px solid #16213e; padding:14px 20px;margin:6px; cursor:pointer; box-shadow:4px 4px 0 #000; min-height:48px;}
+#titleScreen button:disabled{background:#555;color:#999;cursor:not-allowed;box-shadow:4px 4px 0 #222}
+
+#gameRoot{display:none}
+#statusbar{background:#111;padding:10px;font-size:13px;position:sticky;top:0;z-index:10;line-height:1.8;border-bottom:4px solid #000}
+#methodBadge{display:inline-block;background:#3a7bd5;padding:3px 10px;border:2px solid #16213e;margin-left:6px;font-weight:bold}
+#autoBadge{display:inline-block;background:#2ecc71;padding:3px 10px;border:2px solid #16213e;margin-left:6px;font-weight:bold}
+#timeBadge{display:inline-block;background:#8e44ad;padding:3px 10px;border:2px solid #16213e;margin-left:6px;font-weight:bold}
+#infiniteBadge{display:inline-block;background:#e67e22;padding:3px 10px;border:2px solid #16213e;margin-left:6px;font-weight:bold}
+
+#sceneBox{position:relative;height:260px;margin:10px;border:4px solid #000;overflow:hidden; box-shadow:0 0 0 2px #555 inset;}
+.scene-gosiwon{background:linear-gradient(to bottom, #d8c9a3 0%, #d8c9a3 60%, #8a6d4b 60%, #8a6d4b 100%);}
+.scene-gosiwon-up{background:linear-gradient(to bottom, #cde6f5 0%, #cde6f5 60%, #b08968 60%, #b08968 100%);}
+.scene-gosiwon-top{background:linear-gradient(to bottom, #ffe29a 0%, #ffe29a 60%, #c99a5b 60%, #c99a5b 100%);}
+.scene-shop{background:linear-gradient(to bottom, #eafff0 0%, #eafff0 55%, #bdf0cf 55%, #bdf0cf 100%);}
+.scene-center{background:linear-gradient(to bottom, #666 0%, #666 55%, #333 55%, #333 100%);}
+.scene-license{background:linear-gradient(to bottom, #dfe9ff 0%, #dfe9ff 55%, #aebfe0 55%, #aebfe0 100%);}
+.scene-realestate{background:linear-gradient(to bottom, #fff3d6 0%, #fff3d6 55%, #e3c384 55%, #e3c384 100%);}
+.scene-night{filter:brightness(0.55) saturate(0.8);}
+
+#sceneLabel{position:absolute;top:6px;left:8px;font-size:11px;background:rgba(0,0,0,.5);padding:4px 8px;z-index:5}
+#charCanvas{position:absolute;left:50%;bottom:66px;transform:translateX(-50%);z-index:4}
+#decorLayer{position:absolute;inset:0;z-index:3;font-size:26px}
+#decorLayer span{position:absolute}
+#scenePanel{position:absolute;left:0;right:0;bottom:0;height:64px;background:rgba(0,0,0,.72);display:flex;gap:6px;align-items:center;padding:6px 10px;overflow-x:auto;z-index:6;font-size:12px;-webkit-overflow-scrolling:touch;}
+#scenePanel button{font-size:11px;padding:8px 10px;min-height:40px}
+
+#navBar{display:flex;flex-wrap:wrap;gap:6px;padding:10px;margin:0 10px}
+button{background:#3a7bd5;color:#fff;border:3px solid #16213e;padding:10px 12px;cursor:pointer;font-size:13px;box-shadow:2px 2px 0 #000;min-height:42px}
+button:disabled{background:#555;cursor:not-allowed;box-shadow:2px 2px 0 #222}
+.methodBtn.active{background:#2ecc71}
+
+#log{padding:10px;font-size:12px;color:#9f9;max-height:120px;overflow-y:auto;border-top:1px solid #333;margin:0 10px 10px;-webkit-overflow-scrolling:touch;}
+
+#modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);align-items:center;justify-content:center;z-index:1000}
+#modal-overlay.show{display:flex}
+#modal-content{background:#2b2b3b;padding:20px;border:4px solid #000;max-width:520px;width:92%;text-align:center;
+  max-height:85vh; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.call-row{border:2px solid #444;padding:8px;margin:6px 0;text-align:left}
+.item-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #444;padding:8px 0;text-align:left}
+.tag{display:inline-block;background:#444;border-radius:4px;padding:1px 6px;font-size:11px;margin-left:4px}
+.bundle-tag{display:inline-block;background:#e67e22;border-radius:4px;padding:2px 8px;font-size:12px;margin-left:4px;font-weight:bold}
+
+.tv-frame{background:#111;border:10px solid #444;padding:10px;max-width:300px;margin:12px auto}
+.tv-screen{background:linear-gradient(135deg,#0f3460,#16213e);height:170px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.tv-screen::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 3px);animation:scan 2.5s linear infinite}
+@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(10px)}}
+.tv-text{color:#fff;font-size:14px;text-align:center;z-index:2}
+.play-icon{font-size:30px;animation:pulse 1.2s infinite;display:block;margin-bottom:6px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+#gameCanvas{background:#2f2f45;display:block;margin:10px auto;border:2px solid #000;max-width:100%;height:auto;}
+.game-hint{font-size:12px;color:#aaa}
+
+.notice-box{border:3px dashed #ffd93d;padding:14px;margin:10px 0;text-align:left;font-size:13px;line-height:1.7;background:#1f1f30}
+.notice-title{color:#ffd93d;font-weight:bold;text-align:center;margin-bottom:8px}
+
+.cute-box{border:3px dashed #ff9ecf;padding:16px;margin:10px 0;text-align:center;font-size:14px;line-height:1.9;background:#2a1f2e;border-radius:10px}
+.cute-title{color:#ff9ecf;font-weight:bold;text-align:center;margin-bottom:8px;font-size:16px}
+
+.money-box{border:3px dashed #2ecc71;padding:16px;margin:10px 0;text-align:center;font-size:14px;line-height:1.9;background:#1a2e1f;border-radius:10px}
+.money-title{color:#2ecc71;font-weight:bold;text-align:center;margin-bottom:8px;font-size:16px}
+
+.accident-box{border:3px dashed #e74c3c;padding:16px;margin:10px 0;text-align:center;font-size:14px;line-height:1.9;background:#2a1a1a;border-radius:10px}
+.accident-title{color:#e74c3c;font-weight:bold;text-align:center;margin-bottom:8px;font-size:16px}
+
+.event-box{border:3px dashed #e67e22;padding:16px;margin:10px 0;text-align:center;font-size:14px;line-height:1.9;background:#2a1f10;border-radius:10px}
+.event-title{color:#e67e22;font-weight:bold;text-align:center;margin-bottom:8px;font-size:16px}
+
+.auto-toggle-box{border:2px solid #2ecc71;padding:10px;margin:10px 0;border-radius:8px;background:#1a2e1f}
+
+#dpad{
+  display:grid;
+  grid-template-areas:
+    ".    up    ."
+    "left mid right"
+    ".    down  .";
+  grid-template-columns:60px 64px 60px;
+  grid-template-rows:48px 48px 48px;
+  gap:6px;
+  justify-content:center;
+  margin:14px auto 4px;
+}
+.dpad-btn{
+  font-size:22px; min-height:unset;
+  background:#444;color:#fff;border:3px solid #16213e;
+  box-shadow:2px 2px 0 #000; touch-action:none;
+}
+.dpad-btn:active{ background:#2ecc71; }
+.dpad-up{grid-area:up}
+.dpad-down{grid-area:down}
+.dpad-left{grid-area:left}
+.dpad-right{grid-area:right}
+
+@media (max-width:420px){
+  #titleScreen h1{font-size:22px}
+  button{font-size:12px;padding:9px 10px}
+  #statusbar{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="titleScreen">
+  <div class="stars"></div>
+  <div class="skyline"></div>
+  <h1 class="pixel-font">배달해서<br>살아남기</h1>
+  <div class="sub">Delivery SURVIVAL</div>
+  <button onclick="startNewGame()">시작하기</button>
+  <button id="continueBtn" onclick="continueGame()" disabled>이어하기</button>
+</div>
+
+<div id="gameRoot">
+  <div id="statusbar"></div>
+  <div id="sceneBox">
+    <div id="sceneLabel"></div>
+    <div id="decorLayer"></div>
+    <canvas id="charCanvas"></canvas>
+    <div id="scenePanel"></div>
+  </div>
+  <div id="navBar"></div>
+  <div id="log"></div>
+</div>
+
+<div id="modal-overlay"><div id="modal-content"></div></div>
+
+<script>
+/* ===================== 상태 ===================== */
+let S = {};
+function defaultState(){
+  return {
+    day:1, hour:8, minute:0, minutesSinceWake:0,
+    money:5000, stamina:100,
+    method:'walk', hasBag:false, hasPizzaBox:false,
+    safetyTrained:false, rejectsToday:0, autoAssign:false,
+    bike:{owned:false, fuel:0, durability:100, helmet:false, wearHelmet:false},
+    licenses:{bike:false, car:false},
+    weather:'clear', housing:'고시원',
+    scene:'gosiwon', calls:[],
+    theftCount:0, noticePosted:false,
+    sick:false, sickDaysLeft:0,
+    mealsEatenToday:0,
+    hasNavigation:false, autoMoveEnabled:false,
+    food:{kimbap:0, lunchbox:0},
+    gotFormerJobPay:false,
+    infiniteStaminaToday:false,
+    grudgeNeighbor:false
+  };
+}
+S = defaultState();
+
+/* 오토바이/자동차 체력소모 대폭 감소 (가정) */
+const methodConfig = {
+  walk:{max:3, label:'도보', minPerKm:10, staminaPerKm:8, icon:'🚶', speed:1.5, bundleMax:1},
+  bike:{max:10, label:'오토바이', minPerKm:4, staminaPerKm:0.3, icon:'🏍️', speed:3.5, bundleMax:2},
+  car:{max:25, label:'자동차', minPerKm:3, staminaPerKm:0.15, icon:'🚗', speed:5, bundleMax:3},
+};
+const weatherLabel = {clear:'맑음', rain:'비', snow:'눈'};
+const SAVE_KEY = 'ddalbae_save_v1';
+const GOSIWON_RENT = 15000;
+const GOSIWON_CYCLE = 10;
+const MAX_MEALS_PER_DAY = 2;
+const WAIT_MINUTES = {'조리완료':0,'조리중':10,'조리대기':15,'조리완료(가짜-대기필요)':12};
+const BUNDLE_DISTANCE_DISCOUNT = 0.85;
+const FORMER_JOB_PAY_DAY = 20;
+const FORMER_JOB_PAY_AMOUNT = 300000;
+/* 연료 1km당 소모량: 완충(+50) 기준 평균 약 7~8회 배달 가능하도록 조정 (가정) */
+const FUEL_PER_KM = 1.25;
+/* 취침 기준: 기상(08:00) 후 18시간 경과 = 새벽 2시 */
+const SLEEP_THRESHOLD_MIN = 18*60;
+/* 랜덤 이벤트 확률 (가정) */
+const DAILY_EVENT_CHANCE = 0.33;   // 고시원 이벤트, 약 3일에 1번꼴
+const PICKUP_EVENT_CHANCE = 0.2;   // 픽업매장 이벤트
+const REFUEL_SERVICE_CHANCE = 0.15;
+const TIP_EVENT_CHANCE = 0.1;      // 배달완료 팁 보너스
+
+/* 고시원 게시판 공지 목록 (항상 표시, 임의 창작) */
+const GOSIWON_NOTICES = [
+  "📌 환영합니다! 너굴고시원 공식 게시판입니다.<br>항상 깨끗하고 즐거운 고시원 생활 되세요~ 🦝",
+  "🚿 공용 화장실 사용 후에는 꼭 물을 내려주세요!<br>-관리인-",
+  "🔇 밤 10시 이후에는 소음(발소리, TV 소리) 자제 부탁드립니다.<br>-관리인-",
+  "📦 택배는 1층 로비에 보관됩니다. 분실 책임은 지지 않습니다.<br>-주인백-",
+  "💡 복도 전구가 나간 곳이 있으면 관리실로 알려주세요!",
+  "🧺 세탁기는 1인당 1회 30분 제한입니다. 양해 부탁드려요~",
+  "🍜 공용 냉장고에 음식 넣으실 땐 이름을 꼭 적어주세요!"
+];
+
+/* ===================== 시간 유틸 (새벽 2시 취침) ===================== */
+function pad(n){ return n.toString().padStart(2,'0'); }
+function isNightTime(hour){ return hour>=22 || hour<4; }
+function isLunchPeak(hour){ return hour>=11 && hour<13; }
+function isDinnerPeak(hour){ return hour>=17 && hour<19; }
+
+function advanceTime(minutes){
+  S.minutesSinceWake += minutes;
+  const totalMin = (8*60 + S.minutesSinceWake) % (24*60);
+  S.hour = Math.floor(totalMin/60);
+  S.minute = totalMin % 60;
+  if(S.minutesSinceWake >= SLEEP_THRESHOLD_MIN){
+    logMsg('⏰ 새벽 2시가 되자 너무 지쳐서 잠들어버렸습니다...');
+    nextDay();
+  }
+}
+
+/* ===================== 저장/로드 ===================== */
+function saveGame(silent){
+  localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+  if(!silent) logMsg('💾 게임을 저장했습니다.');
+}
+function loadGame(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(raw) S = Object.assign(defaultState(), JSON.parse(raw));
+}
+window.addEventListener('load', ()=>{
+  if(localStorage.getItem(SAVE_KEY)){
+    document.getElementById('continueBtn').disabled = false;
+  }
+});
+
+function startNewGame(){
+  S = defaultState();
+  openGosiwonNotice();
+}
+function openGosiwonNotice(){
+  openModal(`
+    <div class="notice-title">----너굴고시원----</div>
+    <div class="notice-box">
+      고시원 이용료는 10일마다 15,000원씩 차감됩니다.<br><br>
+      이용료를 못 내는 경우 쫓겨납니다. (게임종료)<br><br>
+      고시원에서 제공하는 밥은 무료입니다. (하루 2회 제한)
+    </div>
+    <button onclick="closeModal(); enterGame();">확인</button>
+  `);
+}
+
+function continueGame(){
+  loadGame();
+  enterGame();
+}
+function enterGame(){
+  document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('gameRoot').style.display = 'block';
+  initCharacterBlink();
+  renderAll();
+}
+
+/* ===================== 도트 캐릭터 그리기 ===================== */
+const CHAR_OPEN = [".HHHHHH.","HHHHHHHH","HFFFFFFH","FFEFEFFF","FFFFFFFF",".BBBBBB.","BBBBBBBB","BBBBBBBB",".PP..PP.",".SS..SS."];
+const CHAR_BLINK = [".HHHHHH.","HHHHHHHH","HFFFFFFH","FFFFFFFF","FFFFFFFF",".BBBBBB.","BBBBBBBB","BBBBBBBB",".PP..PP.",".SS..SS."];
+const COLOR_MAP = {'.':null,'H':'#4a3222','F':'#ffd9b3','E':'#2b2b2b','B':'#3a7bd5','P':'#2b2b3b','S':'#1b1b1b','M':'#e74c3c'};
+
+function buildCharRows(blink, helmet){
+  let rows = (blink ? CHAR_BLINK : CHAR_OPEN).slice();
+  if(helmet){
+    rows[0] = "MMMMMMMM";
+    rows[1] = "MMMMMMMM";
+    rows[2] = rows[2].replace(/H/g,'M');
+  }
+  return rows;
+}
+function drawPixelChar(ctx, rows, ox, oy, cell){
+  for(let r=0;r<rows.length;r++){
+    const row = rows[r];
+    for(let c=0;c<row.length;c++){
+      const color = COLOR_MAP[row[c]];
+      if(color){ ctx.fillStyle = color; ctx.fillRect(ox+c*cell, oy+r*cell, cell, cell); }
+    }
+  }
+}
+let blinkTimer = null;
+function initCharacterBlink(){
+  if(blinkTimer) return;
+  blinkTimer = setInterval(()=>{
+    drawMainCharacter(true);
+    setTimeout(()=>drawMainCharacter(false), 150);
+  }, 2200);
+}
+function drawMainCharacter(blink){
+  const canvas = document.getElementById('charCanvas');
+  if(!canvas) return;
+  const cell = 12;
+  canvas.width = 8*cell; canvas.height = 10*cell;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.filter = S.sick ? 'grayscale(45%) hue-rotate(80deg) brightness(0.9)' : 'none';
+  drawPixelChar(ctx, buildCharRows(blink, false), 0, 0, cell);
+  ctx.filter = 'none';
+}
+
+/* ===================== 공통 UI ===================== */
+function fmt(n){ return n.toLocaleString()+'원'; }
+function logMsg(t){
+  const el = document.getElementById('log');
+  el.innerHTML = `<div>Day${S.day} ${pad(S.hour)}:${pad(S.minute)} - ${t}</div>` + el.innerHTML;
+}
+function openModal(html){
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('show'); }
+
+function renderAll(){ renderStatusbar(); renderNav(); renderScene(); }
+
+function renderStatusbar(){
+  const cfg = methodConfig[S.method];
+  const nextRentDay = Math.ceil(S.day/GOSIWON_CYCLE)*GOSIWON_CYCLE || GOSIWON_CYCLE;
+  const night = isNightTime(S.hour);
+  document.getElementById('statusbar').innerHTML = `
+    <b>Day ${S.day}</b>
+    <span id="timeBadge">🕐 ${pad(S.hour)}:${pad(S.minute)} ${night?'🌙':'☀️'}</span>
+    | 💰 ${fmt(S.money)} | ❤️ 체력 ${S.stamina} ${S.sick?'🤒(아픔)':''}
+    ${S.infiniteStaminaToday ? '<span id="infiniteBadge">🍗 체력무한(오늘)</span>' : ''}
+    <span id="methodBadge">${cfg.icon} 현재 수단: ${cfg.label}</span>
+    ${S.hasNavigation ? `<span id="autoBadge">🧭 자동배달 ${S.autoMoveEnabled?'ON':'OFF'}</span>` : ''}
+    | 🌦️ ${weatherLabel[S.weather]} | 🏠 ${S.housing}
+    | 거절가능 ${3-S.rejectsToday}/3
+    ${S.method==='bike' ? ' | ⛽ '+S.bike.fuel+'/100 | 🔧 '+S.bike.durability.toFixed(0) : ''}
+    ${S.housing==='고시원' ? ' | 📅 다음 이용료: Day '+nextRentDay : ''}
+  `;
+}
+
+function renderNav(){
+  document.getElementById('navBar').innerHTML = `
+    <button onclick="goScene('gosiwon')">🏠 고시원</button>
+    <button onclick="goScene('shop')">🏪 편의점/상점</button>
+    <button onclick="goScene('center')">🔧 정비소</button>
+    <button onclick="goScene('license')">🪪 면허시험장</button>
+    <button onclick="goScene('realestate')">🏢 부동산</button>
+    <button onclick="goDeliver()">🛵 배달하러 가기</button>
+    <button onclick="saveGame()">💾 저장하기</button>
+    <button onclick="nextDay()">🌙 자고 일어나기(다음날)</button>
+  `;
+}
+
+function goScene(sc){ S.scene = sc; renderScene(); }
+</script>
+
+<script>
+/* ===================== 씬(배경) 렌더 ===================== */
+function sceneClass(){
+  let base;
+  if(S.scene==='gosiwon'){
+    if(S.housing==='전세집') base = 'scene-gosiwon-top';
+    else if(S.housing.includes('월세')) base = 'scene-gosiwon-up';
+    else base = 'scene-gosiwon';
+  } else {
+    base = 'scene-'+S.scene;
+  }
+  return base + (isNightTime(S.hour) ? ' scene-night' : '');
+}
+function sceneLabelText(){
+  return ({gosiwon:'🏠 '+S.housing, shop:'🏪 편의점/상점', center:'🔧 정비소/주유소', license:'🪪 면허시험장', realestate:'🏢 부동산'})[S.scene];
+}
+function decorHTML(){
+  let badge = S.sick ? `<span style="left:50%;top:4px;transform:translateX(-50%);font-size:28px;z-index:7">🤒</span>` : '';
+  let items = '';
+  if(S.scene==='gosiwon'){
+    items += `<span style="left:20px;top:40px">🪟</span>`;
+    items += `<span style="right:20px;top:38px">${S.bike.helmet?'🪖':'🧷'}</span>`;
+    if(S.hasNavigation) items += `<span style="right:60px;top:60px">🧭</span>`;
+    if(S.housing==='고시원') items += `<span style="left:30px;bottom:70px">🛏️</span>`;
+    if(S.housing.includes('월세')) items += `<span style="left:30px;bottom:70px">🛏️</span><span style="right:40px;bottom:70px">📺</span>`;
+    if(S.housing==='전세집') items += `<span style="left:20px;bottom:70px">🛋️</span><span style="right:30px;bottom:70px">📺</span><span style="left:50%;bottom:200px">🪴</span>`;
+  } else if(S.scene==='shop'){
+    items = `<span style="left:10%;top:20px">🧃</span><span style="left:30%;top:30px">🍙</span><span style="left:55%;top:20px">🪖</span><span style="left:75%;top:30px">📦</span><span style="left:85%;top:50px">🧭</span>`;
+  } else if(S.scene==='center'){
+    items = `<span style="left:20%;top:30px">🛠️</span><span style="left:55%;top:25px">🏍️</span><span style="left:75%;top:35px">⛽</span>`;
+  } else if(S.scene==='license'){
+    items = `<span style="left:20%;top:30px">📋</span><span style="left:60%;top:25px">🚦</span>`;
+  } else if(S.scene==='realestate'){
+    items = `<span style="left:20%;top:30px">🏠</span><span style="left:60%;top:25px">🔑</span>`;
+  }
+  return badge + items;
+}
+
+function renderScene(){
+  const box = document.getElementById('sceneBox');
+  box.className = sceneClass();
+  document.getElementById('sceneLabel').innerText = sceneLabelText();
+  document.getElementById('decorLayer').innerHTML = decorHTML();
+  drawMainCharacter(false);
+  document.getElementById('scenePanel').innerHTML = scenePanelHTML();
+}
+
+function scenePanelHTML(){
+  if(S.scene==='gosiwon') return gosiwonPanel();
+  if(S.scene==='shop') return shopPanel();
+  if(S.scene==='center') return centerPanel();
+  if(S.scene==='license') return licensePanel();
+  if(S.scene==='realestate') return realestatePanel();
+  return '';
+}
+
+/* ---------- 고시원 패널 ---------- */
+function gosiwonPanel(){
+  let methodBtns = `
+    <button class="methodBtn ${S.method==='walk'?'active':''}" onclick="switchMethod('walk')">🚶도보</button>
+    <button class="methodBtn ${S.method==='bike'?'active':''}" onclick="switchMethod('bike')" ${!S.bike.owned?'disabled':''}>🏍️오토바이</button>
+    <button class="methodBtn" disabled title="미구현">🚗자동차</button>
+  `;
+  let helmetToggle = S.bike.helmet
+    ? `<label>🪖 헬멧 착용 <input type="checkbox" ${S.bike.wearHelmet?'checked':''} onchange="toggleHelmet(this.checked)"></label>`
+    : `<span style="color:#999">헬멧 없음</span>`;
+  let navToggle = S.hasNavigation
+    ? `<label>🧭 자동배달 <input type="checkbox" ${S.autoMoveEnabled?'checked':''} onchange="toggleAutoMove(this.checked)"></label>`
+    : `<span style="color:#999">네비게이션 없음</span>`;
+  return `
+    ${methodBtns}
+    ${helmetToggle}
+    ${navToggle}
+    <button onclick="restAtGosiwon()">🛏️ 휴식 (2시간, 체력+20)</button>
+    <button onclick="openGosiwonMeal()">🍚 무료 식사 (${MAX_MEALS_PER_DAY - S.mealsEatenToday}/${MAX_MEALS_PER_DAY}회 남음)</button>
+    <button onclick="openInventoryFood()">🍱 내 식량 먹기 (🍙${S.food.kimbap} 🍱${S.food.lunchbox})</button>
+    <button onclick="openBulletinBoard()">📋 게시판 보기</button>
+    <label>AI자동배정 <input type="checkbox" ${S.autoAssign?'checked':''} onchange="S.autoAssign=this.checked"></label>
+    <span>🎒${S.hasBag?'보유':'없음'} / 📦${S.hasPizzaBox?'보유':'없음'}</span>
+  `;
+}
+function switchMethod(m){
+  if(m==='bike' && !S.bike.owned){ alert('오토바이가 없습니다. 상점에서 구매하세요.'); return; }
+  S.method = m;
+  logMsg(`배달수단을 ${methodConfig[m].label}로 변경했습니다.`);
+  renderAll();
+}
+function toggleHelmet(v){ S.bike.wearHelmet = v; renderStatusbar(); }
+function toggleAutoMove(v){
+  if(!S.hasNavigation){ alert('먼저 네비게이션을 구매하세요!'); return; }
+  S.autoMoveEnabled = v;
+  logMsg(`🧭 자동배달 네비게이션을 ${v?'켰습니다':'꺼졌습니다'}.`);
+  saveGame(true); renderAll();
+}
+
+/* ---------- 고시원 무료 식사 ---------- */
+function openGosiwonMeal(){
+  if(S.housing!=='고시원'){ alert('고시원에 거주해야 무료 식사가 가능합니다.'); return; }
+  if(S.sick){ alert('몸이 아파서 아직 음식을 제대로 먹을 수 없습니다. 하루 쉬어야 합니다. 🤒'); return; }
+  if(S.mealsEatenToday >= MAX_MEALS_PER_DAY){
+    alert('오늘은 더 이상 무료 식사를 할 수 없습니다. (하루 최대 2회)');
+    return;
+  }
+  openModal(`
+    <h3>🍚 고시원 식사 (${MAX_MEALS_PER_DAY - S.mealsEatenToday}/${MAX_MEALS_PER_DAY}회 남음)</h3>
+    <p class="game-hint">무엇을 드시겠습니까?</p>
+    <button onclick="eatBasicMeal()">기본 반찬으로 먹기 (김치, 밥, 김)</button><br><br>
+    <button onclick="attemptSteal()">🤫 남의 반찬 훔쳐먹기</button>
+  `);
+}
+function eatBasicMeal(){
+  S.mealsEatenToday++;
+  S.stamina = Math.min(100, S.stamina+25);
+  logMsg('🍚 김치, 밥, 김으로 든든하게 먹었다! (체력 +25)');
+  closeModal(); saveGame(true); renderAll();
+}
+function attemptSteal(){
+  S.mealsEatenToday++;
+  const success = Math.random() < 0.6;
+  closeModal();
+  if(success){
+    S.theftCount++;
+    if(S.noticePosted && Math.random() < 0.35){
+      triggerLaxativeEvent();
+      return;
+    }
+    S.stamina = Math.min(100, S.stamina+50);
+    logMsg('🍗 반찬훔쳐먹는데 성공했습니다! 몰래 배부르게 먹었다 (체력 +50)');
+    if(!S.noticePosted && S.theftCount>=3){
+      S.noticePosted = true;
+      logMsg('📌 고시원 게시판에 새로운 공지가 올라왔습니다...');
+    }
+  } else {
+    const cost = S.infiniteStaminaToday ? 0 : 5;
+    S.stamina = Math.max(0, S.stamina-cost);
+    logMsg(`🏃 반찬을 훔쳐먹으려고 했는데 주인이 나타나서 도망쳤다! (체력 -${cost})`);
+  }
+  saveGame(true); renderAll();
+}
+function triggerLaxativeEvent(){
+  S.sick = true;
+  S.sickDaysLeft = 1;
+  const cost = S.infiniteStaminaToday ? 0 : 20;
+  S.stamina = Math.max(0, S.stamina-cost);
+  openModal(`
+    <div class="notice-title">😱 큰일났다!</div>
+    <div class="notice-box">
+      훔쳐먹은 반찬에서 이상한 맛이 났다...<br><br>
+      누군가 음식에 설사약을 타놓은 것 같다!<br><br>
+      배가 너무 아파서 하루 동안은 꼼짝없이 쉬어야겠다 🤒
+    </div>
+    <button onclick="closeModal(); renderAll();">확인</button>
+  `);
+  logMsg('🤢 설사약 사건 발생! 하루 동안 앓아눕게 되었습니다.');
+  saveGame(true);
+}
+
+/* ---------- 내가 구매한 식량 먹기 ---------- */
+function openInventoryFood(){
+  if(S.sick){ alert('몸이 아파서 아직 음식을 제대로 먹을 수 없습니다. 하루 쉬어야 합니다. 🤒'); return; }
+  if(S.food.kimbap<=0 && S.food.lunchbox<=0){
+    alert('가지고 있는 음식이 없습니다. 편의점에서 먼저 구매해보세요!');
+    return;
+  }
+  openModal(`
+    <h3>🍱 내 식량 먹기</h3>
+    <p class="game-hint">편의점에서 사온 음식을 꺼내 먹습니다. (횟수 제한 없음)</p>
+    <div class="item-row"><span>🍙 김밥 (보유 ${S.food.kimbap}개 / 체력+15)</span>
+      <button onclick="eatInventoryFood('kimbap')" ${S.food.kimbap<=0?'disabled':''}>먹기</button></div>
+    <div class="item-row"><span>🍱 도시락 (보유 ${S.food.lunchbox}개 / 체력+35)</span>
+      <button onclick="eatInventoryFood('lunchbox')" ${S.food.lunchbox<=0?'disabled':''}>먹기</button></div>
+    <br><button onclick="closeModal()">닫기</button>
+  `);
+}
+function eatInventoryFood(type){
+  if(S.food[type] <= 0){ alert('가지고 있지 않습니다.'); return; }
+  S.food[type]--;
+  const gain = type==='kimbap' ? 15 : 35;
+  S.stamina = Math.min(100, S.stamina + gain);
+  logMsg(`${type==='kimbap'?'🍙 김밥':'🍱 도시락'}을 꺼내 먹었다! (체력 +${gain})`);
+  saveGame(true);
+  openInventoryFood();
+  renderAll();
+}
+
+/* ---------- 고시원 게시판 ---------- */
+function openBulletinBoard(){
+  let html = `<h3>📋 고시원 게시판</h3>`;
+  GOSIWON_NOTICES.forEach(n=>{
+    html += `<div class="notice-box">${n}</div>`;
+  });
+  if(S.noticePosted){
+    html += `
+    <div class="notice-box" style="border-color:#e74c3c">
+      <div class="notice-title" style="color:#e74c3c">---너굴고시원---</div>
+      요근래 냉장고에서 본인것이 아닌 남의 음식을<br>
+      훔쳐먹는다는 제보가 전해지고 있습니다<br>
+      본인것만 먹도록 합시다<br>
+      -주인백-
+    </div>`;
+  }
+  html += `<button onclick="closeModal()">닫기</button>`;
+  openModal(html);
+}
+
+/* ---------- 상점/편의점 패널 ---------- */
+function shopPanel(){
+  return `
+    <button onclick="buy('pizzabox')">📦피자박스(3,000)</button>
+    <button onclick="buy('kimbap')">🍙김밥(1,500) [보유:${S.food.kimbap}]</button>
+    <button onclick="buy('lunchbox')">🍱도시락(4,000) [보유:${S.food.lunchbox}]</button>
+    <button onclick="buy('helmet')">🪖헬멧(10,000)</button>
+    <button onclick="buy('bike')">🏍️오토바이(300,000)</button>
+    <button onclick="buy('navigation')">🧭 네비게이션(50,000) ${S.hasNavigation?'✅':''}</button>
+  `;
+}
+function buy(item){
+  const price = {pizzabox:3000, kimbap:1500, lunchbox:4000, helmet:10000, bike:300000, navigation:50000}[item];
+  if(S.money < price){ alert('돈이 부족합니다.'); return; }
+  if(item==='bike' && !S.licenses.bike){ alert('이륜차 면허가 필요합니다!'); return; }
+  if(item==='navigation' && S.hasNavigation){ alert('이미 네비게이션을 보유하고 있습니다.'); return; }
+  S.money -= price;
+
+  if(item==='pizzabox'){ S.hasPizzaBox = true; logMsg(`📦 피자박스를 구매했습니다. (-${fmt(price)})`); }
+  else if(item==='kimbap'){ S.food.kimbap++; logMsg(`🍙 김밥을 구매했습니다! 고시원에서 꺼내 먹을 수 있어요. (-${fmt(price)})`); }
+  else if(item==='lunchbox'){ S.food.lunchbox++; logMsg(`🍱 도시락을 구매했습니다! 고시원에서 꺼내 먹을 수 있어요. (-${fmt(price)})`); }
+  else if(item==='helmet'){ S.bike.helmet = true; logMsg(`🪖 헬멧을 구매했습니다. (-${fmt(price)})`); }
+  else if(item==='bike'){ S.bike.owned=true; S.bike.fuel=100; S.method='bike'; logMsg(`🏍️ 오토바이를 구매했습니다! (-${fmt(price)})`); }
+  else if(item==='navigation'){ S.hasNavigation = true; logMsg(`🧭 네비게이션을 구매했습니다! 고시원에서 자동배달을 켤 수 있습니다. (-${fmt(price)})`); }
+
+  saveGame(true); renderAll();
+}
+
+/* ---------- 정비소 패널 (랜덤 이벤트 포함) ---------- */
+function centerPanel(){
+  if(!S.bike.owned) return `<span style="color:#999">오토바이가 없습니다.</span>`;
+  return `
+    <span>⛽${S.bike.fuel}/100 🔧${S.bike.durability.toFixed(0)}</span>
+    <button onclick="refuel()">주유(+50,10,000원)</button>
+    <button onclick="repair()">수리(20,000원)</button>
+  `;
+}
+function refuel(){
+  if(S.money<10000){ alert('돈 부족'); return; }
+  S.money-=10000;
+  let fuelGain = 50;
+  if(Math.random() < REFUEL_SERVICE_CHANCE){
+    fuelGain = 65;
+    logMsg('⛽ 주유소 사장님이 서비스로 기름을 더 넣어주셨습니다! (연료 +65)');
+  } else {
+    logMsg(`⛽ 주유 완료 (연료 +${fuelGain})`);
+  }
+  S.bike.fuel = Math.min(100, S.bike.fuel + fuelGain);
+  saveGame(true); renderAll();
+}
+function repair(){
+  if(S.money<20000){ alert('돈 부족'); return; }
+  const roll = Math.random();
+  let cost = 20000;
+  if(roll < 0.2){
+    cost = 25000;
+    S.money = Math.max(0, S.money-cost);
+    logMsg(`😡 정비사에게 눈탱이를 맞아 돈을 더 냈습니다! (-${fmt(cost)})`);
+  } else if(roll < 0.35){
+    cost = 15000;
+    S.money -= cost;
+    logMsg(`😊 정비사가 친절하게 할인해주셨습니다! (-${fmt(cost)})`);
+  } else {
+    S.money -= cost;
+    logMsg(`🔧 오토바이 수리 완료 (-${fmt(cost)})`);
+  }
+  S.bike.durability = 100;
+  saveGame(true); renderAll();
+}
+
+/* ---------- 면허시험장 패널 ---------- */
+function licensePanel(){
+  return `
+    <button onclick="startLicenseExam('bike')" ${S.licenses.bike?'disabled':''}>이륜차시험(50,000)${S.licenses.bike?' ✅':''}</button>
+    <button onclick="startLicenseExam('car')" ${S.licenses.car?'disabled':''}>자동차시험(80,000)${S.licenses.car?' ✅':''}</button>
+  `;
+}
+function startLicenseExam(type){
+  const price = type==='bike'?50000:80000;
+  if(S.money<price){ alert('돈 부족'); return; }
+  S.money-=price; renderStatusbar();
+  openModal(`
+    <h3>📝 필기시험</h3>
+    <p>Q. 오토바이 주행 중 헬멧을 쓰지 않으면?</p>
+    <button onclick="licenseWritten('${type}', true)">과태료 대상이 될 수 있다</button><br><br>
+    <button onclick="licenseWritten('${type}', false)">아무 문제 없다</button>
+  `);
+}
+function licenseWritten(type, correct){
+  if(!correct){ alert('필기 불합격! 다시 시험 접수하세요.'); closeModal(); return; }
+  openModal(`<h3>🏍️ 실기시험</h3><p>버튼이 초록색일 때 눌러서 코스를 통과하세요!</p>
+    <button id="practBtn" style="background:red" onclick="licensePractical('${type}')">대기...</button>`);
+  setTimeout(()=>{
+    const btn = document.getElementById('practBtn');
+    if(btn){ btn.style.background='green'; btn.innerText='지금 클릭!'; }
+  }, 1000+Math.random()*1500);
+}
+function licensePractical(type){
+  const btn = document.getElementById('practBtn');
+  const pass = btn && btn.style.background==='green';
+  closeModal();
+  if(pass){ S.licenses[type]=true; logMsg(`${type==='bike'?'이륜차':'자동차'} 면허 취득!`); }
+  else logMsg('실기 불합격! 다시 응시하세요.');
+  saveGame(true); renderAll();
+}
+
+/* ---------- 부동산 패널 ---------- */
+function realestatePanel(){
+  return `
+    <button onclick="moveHouse('월세')">월세(보증금 200,000)</button>
+    <button onclick="moveHouse('전세')">전세(보증금 5,000,000)</button>
+  `;
+}
+function moveHouse(type){
+  const cost = type==='월세'?200000:5000000;
+  if(S.money<cost){ alert('돈이 부족합니다.'); return; }
+  S.money-=cost; S.housing = type==='월세'?'원룸(월세)':'전세집';
+  logMsg(`${S.housing}으로 이사 완료! (고시원 10일 이용료는 더 이상 적용되지 않습니다)`);
+  saveGame(true); renderAll();
+}
+</script>
+
+<script>
+/* ===================== 배달 흐름 ===================== */
+function goDeliver(){
+  if(S.stamina<=0){ alert('체력이 없어 일을 할 수 없습니다'); return; }
+  if(S.sick){ alert('몸이 아파서 배달을 할 수 없습니다. 하루 쉬어야 합니다. 🤒'); return; }
+  if(!S.safetyTrained){
+    const ok = window.confirm('배달을 하기 위해서는 안전교육을 받아야 합니다.\n받으시겠습니까?');
+    if(ok) openSafetyTraining();
+    return;
+  }
+  if(!S.hasBag){ alert('가방이 없습니다. (오류 상태)'); return; }
+  openCallList();
+}
+
+function openSafetyTraining(){
+  let t = 10;
+  openModal(`
+    <h3>📺 안전교육 영상 시청</h3>
+    <div class="tv-frame"><div class="tv-screen"><div class="tv-text">
+      <span class="play-icon">▶️</span>안전교육 영상 재생중...<br>
+      <span id="trainTimer" style="font-size:22px;font-weight:bold">${t}</span>초 남음
+    </div></div></div>
+    <button id="trainNextBtn" disabled onclick="openSafetyQuiz()">다음</button>
+  `);
+  const iv = setInterval(()=>{
+    t--;
+    const span = document.getElementById('trainTimer');
+    if(span) span.innerText = t;
+    if(t<=0){ clearInterval(iv); const b=document.getElementById('trainNextBtn'); if(b) b.disabled=false; }
+  },1000);
+}
+function openSafetyQuiz(){
+  openModal(`
+    <h3>❓ 안전교육 퀴즈</h3>
+    <p>Q. 오토바이 배달 중 신호를 위반하면?</p>
+    <button onclick="checkQuiz(false)">아무 일도 없다</button><br><br>
+    <button onclick="checkQuiz(true)">단속으로 과태료를 낼 수 있다</button>
+  `);
+}
+function checkQuiz(correct){
+  if(correct){
+    S.safetyTrained = true; S.hasBag = true;
+    logMsg('안전교육 수료! 배달가방이 무료로 지급되었습니다. 🎒');
+    closeModal(); saveGame(true); renderAll();
+    openCallList();
+  } else { alert('오답입니다. 다시 시청하세요.'); openSafetyTraining(); }
+}
+
+/* ---------- 콜 생성 ---------- */
+function generateCalls(){
+  const hour = S.hour;
+  const night = isNightTime(hour);
+  const lunch = isLunchPeak(hour);
+  const dinner = isDinnerPeak(hour);
+  const peak = lunch || dinner;
+  const count = peak ? 8 : 5;
+
+  const foods = ['치킨','피자','중식','분식','편의점도시락'];
+  const cookStates = ['조리완료','조리중','조리대기','조리완료(가짜-대기필요)'];
+  const calls = [];
+  for(let i=0;i<count;i++){
+    const distance = +(Math.random()*18+0.5).toFixed(1);
+    let fee = 1900 + Math.round(distance*300);
+    let tags = [];
+
+    if(S.weather!=='clear'){ fee += 500; tags.push('🌨️기상할증'); }
+    if(night){ fee += 1500; tags.push('🌙야간할증'); }
+
+    if(peak){
+      fee += 2000;
+      tags.push(lunch ? '🍚점심피크' : '🌆저녁피크');
+    } else {
+      const surge = Math.round((Math.random()*1000-500)/100)*100;
+      fee += surge;
+      if(surge>0) tags.push('📈+'+surge);
+      else if(surge<0) tags.push('📉'+surge);
+    }
+    fee = Math.max(1000, fee);
+
+    calls.push({
+      id: Date.now()+'_'+i, distance, fee,
+      food: foods[Math.floor(Math.random()*foods.length)],
+      bags: Math.random()<0.2 ? 2 : 1,
+      cook: cookStates[Math.floor(Math.random()*cookStates.length)],
+      tags: tags.join(' '),
+      isNight: night
+    });
+  }
+  return calls;
+}
+
+/* ---------- 콜 목록 + 묶음배달 선택 ---------- */
+let bundleSelection = [];
+
+function openCallList(){
+  const cfg = methodConfig[S.method];
+  const pool = generateCalls().filter(c => c.distance <= cfg.max);
+  S.calls = pool;
+  bundleSelection = [];
+  if(pool.length===0){
+    openModal(`<h3>콜 목록</h3><p>${cfg.label}(최대${cfg.max}km)로 갈 콜이 없습니다.</p><button onclick="closeModal()">닫기</button>`);
+    return;
+  }
+  if(S.autoAssign){
+    const best = pool.reduce((a,b)=> b.fee>a.fee?b:a);
+    closeModal(); acceptCall(best.id); return;
+  }
+  renderCallListModal();
+}
+
+function renderCallListModal(){
+  const cfg = methodConfig[S.method];
+  const pool = S.calls;
+  let html = `<h3>📋 콜 목록 (${cfg.icon}${cfg.label}, 최대${cfg.max}km)</h3>`;
+
+  if(cfg.bundleMax > 1){
+    html += `<p class="game-hint">📦 묶음배달: 체크박스로 최대 ${cfg.bundleMax}건까지 함께 선택해서 한번에 배달 가능! (현재 선택: ${bundleSelection.length}/${cfg.bundleMax})</p>`;
+  } else {
+    html += `<p class="game-hint">🚶 도보는 묶음배달이 불가능합니다. (한번에 1건만 배달)</p>`;
+  }
+
+  pool.forEach(c=>{
+    const checked = bundleSelection.includes(c.id) ? 'checked' : '';
+    html += `<div class="call-row">
+      ${cfg.bundleMax > 1 ? `<input type="checkbox" ${checked} onchange="toggleBundleSelect('${c.id}', this.checked)"> ` : ''}
+      ${c.food} | ${c.distance}km | ${fmt(c.fee)} | ${c.bags}봉지 | ${c.cook}
+      ${c.tags ? '<br>'+c.tags.split(' ').map(t=>'<span class="tag">'+t+'</span>').join('') : ''}
+      <br><button onclick="acceptCall('${c.id}')">단독 수락</button>
+      <button onclick="rejectCall('${c.id}')">거절</button>
+    </div>`;
+  });
+
+  if(cfg.bundleMax > 1){
+    html += `<button onclick="acceptBundle()" ${bundleSelection.length<2?'disabled':''}>📦 묶음 배달 시작 (${bundleSelection.length}건)</button>`;
+  }
+  html += `<button onclick="closeModal()">나가기</button>`;
+  openModal(html);
+}
+
+function toggleBundleSelect(id, checked){
+  const cfg = methodConfig[S.method];
+  if(checked){
+    if(bundleSelection.length >= cfg.bundleMax){
+      alert(`${cfg.label}은 최대 ${cfg.bundleMax}개까지만 묶을 수 있습니다.`);
+      renderCallListModal();
+      return;
+    }
+    bundleSelection.push(id);
+  } else {
+    bundleSelection = bundleSelection.filter(x=>x!==id);
+  }
+  renderCallListModal();
+}
+
+function rejectCall(id){
+  if(S.rejectsToday>=3){ alert('오늘 거절 횟수를 다 썼습니다!'); return; }
+  S.rejectsToday++; S.calls = S.calls.filter(c=>c.id!==id);
+  bundleSelection = bundleSelection.filter(x=>x!==id);
+  renderStatusbar(); renderCallListModal();
+}
+
+function acceptCall(id){
+  const call = S.calls.find(c=>c.id===id) || generateCalls()[0];
+  if(call.food==='피자' && !S.hasPizzaBox){ alert('피자박스가 없습니다!'); return; }
+  closeModal();
+  runMovementStage('🏪 상점으로 이동 중', call.distance, {police:false, accident:true, isNight:call.isNight},
+    ()=> handleArrivalAtShop(call));
+}
+
+/* ---------- 묶음배달 ---------- */
+function sumDistance(calls){
+  const raw = calls.reduce((a,c)=>a+c.distance, 0);
+  return +(raw * BUNDLE_DISTANCE_DISCOUNT).toFixed(1);
+}
+
+function acceptBundle(){
+  if(bundleSelection.length < 2){ alert('묶음배달은 2개 이상 선택해야 합니다.'); return; }
+  const calls = S.calls.filter(c => bundleSelection.includes(c.id));
+  if(calls.some(c=>c.food==='피자') && !S.hasPizzaBox){ alert('피자박스가 없습니다! (묶음 중 피자 주문이 포함되어 있습니다)'); return; }
+  closeModal();
+  startBundleDelivery(calls);
+}
+
+function startBundleDelivery(calls){
+  const totalPickupDist = sumDistance(calls);
+  runMovementStage(`🏪 상점 ${calls.length}곳으로 이동 중 (묶음배달)`, totalPickupDist,
+    {police:false, accident:true, isNight:isNightTime(S.hour)},
+    ()=> handleBundleArrivalAtShop(calls, totalPickupDist));
+}
+
+function handleBundleArrivalAtShop(calls, traveledDist){
+  advanceTime(Math.round(traveledDist * methodConfig[S.method].minPerKm));
+  const totalWaitMin = calls.reduce((sum,c)=> sum + (WAIT_MINUTES[c.cook]||0), 0);
+  let waitSec = Math.min(20, Math.max(2, Math.round(totalWaitMin/2)));
+
+  if(Math.random() < PICKUP_EVENT_CHANCE){
+    triggerPickupEvent(()=>{
+      openModal(`<h3>🏪 상점 ${calls.length}곳 픽업 중 <span class="bundle-tag">묶음배달</span></h3>
+        <p>여러 매장을 돌며 포장을 받고 있습니다...</p>
+        <p id="pickupInfo">대기 중... ${waitSec}초</p>`);
+      runPickupTimer(waitSec, totalWaitMin, ()=> startBundleDeliveryStage(calls));
+    });
+    return;
+  }
+
+  openModal(`<h3>🏪 상점 ${calls.length}곳 픽업 중 <span class="bundle-tag">묶음배달</span></h3>
+    <p>여러 매장을 돌며 포장을 받고 있습니다...</p>
+    <p id="pickupInfo">대기 중... ${waitSec}초</p>`);
+  runPickupTimer(waitSec, totalWaitMin, ()=> startBundleDeliveryStage(calls));
+}
+
+function runPickupTimer(waitSec, waitMin, onDone){
+  const iv = setInterval(()=>{
+    waitSec--;
+    const el = document.getElementById('pickupInfo');
+    if(el) el.innerText = '대기 중... '+waitSec+'초';
+    if(waitSec<=0){
+      clearInterval(iv);
+      advanceTime(waitMin);
+      onDone();
+    }
+  },1000);
+}
+
+function startBundleDeliveryStage(calls){
+  closeModal();
+  const totalDeliverDist = sumDistance(calls);
+  const night = isNightTime(S.hour);
+  runMovementStage(`🚚 묶음배달 ${calls.length}건 배달 중`, totalDeliverDist,
+    {police:true, accident:true, isNight:night},
+    ()=> finishBundleDelivery(calls, totalDeliverDist));
+}
+
+function finishBundleDelivery(calls, traveledDist){
+  advanceTime(Math.round(traveledDist * methodConfig[S.method].minPerKm));
+  const cfg = methodConfig[S.method];
+
+  let staminaCost = Math.round(traveledDist * cfg.staminaPerKm);
+  let fuelOK = true;
+  if(S.method==='bike'){
+    const fuelCost = Math.round(traveledDist*FUEL_PER_KM);
+    if(S.bike.fuel < fuelCost) fuelOK=false; else S.bike.fuel -= fuelCost;
+    S.bike.durability = Math.max(0, S.bike.durability - traveledDist*0.5);
+  }
+  if(!S.infiniteStaminaToday) S.stamina = Math.max(0, S.stamina - staminaCost);
+
+  let totalEarned = 0, totalPenalty = 0, successCount = 0, failCount = 0;
+  calls.forEach(call=>{
+    const misdeliveryChance = (S.stamina < 20 ? 0.4 : 0.05);
+    const misdelivered = !fuelOK || Math.random() < misdeliveryChance;
+    if(misdelivered){
+      const penalty = Math.round(call.fee*0.3);
+      S.money -= penalty;
+      totalPenalty += penalty;
+      failCount++;
+    } else {
+      let earn = call.fee;
+      if(Math.random() < TIP_EVENT_CHANCE){
+        const tip = 1000 + Math.floor(Math.random()*2000);
+        earn += tip;
+      }
+      S.money += earn;
+      totalEarned += earn;
+      successCount++;
+    }
+  });
+
+  logMsg(`📦 묶음배달 완료! 성공 ${successCount}건(+${fmt(totalEarned)}) / 실패 ${failCount}건(-${fmt(totalPenalty)}) ${fuelOK?'':'(연료부족으로 전체 실패)'}`);
+  saveGame(true); renderAll();
+}
+
+/* ---------- 픽업 매장 랜덤 이벤트 (3종) ---------- */
+function triggerPickupEvent(onClose){
+  const events = [
+    {
+      title: '😡 사장님과의 다툼',
+      body: '픽업하러 간 가게 주인이랑 조리대기 문제로 싸웠습니다.<br><br>체력이 깎였습니다 (-10)',
+      apply: ()=>{ if(!S.infiniteStaminaToday) S.stamina = Math.max(0, S.stamina-10); }
+    },
+    {
+      title: '🥤 사장님의 서비스',
+      body: '친절한 사장님이 음료를 서비스로 챙겨주셨습니다!<br><br>체력이 회복되었습니다 (+10)',
+      apply: ()=>{ S.stamina = Math.min(100, S.stamina+10); }
+    },
+    {
+      title: '📦 재포장 지연',
+      body: '포장이 잘못되어 다시 포장하는 동안 기다려야 했습니다.<br><br>대기시간이 늘어났습니다 (+3분)',
+      apply: ()=>{ advanceTime(3); }
+    }
+  ];
+  const ev = events[Math.floor(Math.random()*events.length)];
+  ev.apply();
+  openModal(`
+    <div class="event-title">${ev.title}</div>
+    <div class="event-box">${ev.body}</div>
+    <button onclick="closeModal(); (${onClose.toString().includes('=>')?'':''}) ">확인</button>
+  `);
+  // 버튼에 직접 콜백 연결
+  setTimeout(()=>{
+    const btns = document.querySelectorAll('#modal-content button');
+    const btn = btns[btns.length-1];
+    if(btn){ btn.onclick = ()=>{ closeModal(); onClose(); }; }
+  },0);
+  logMsg(`${ev.title} 발생`);
+  saveGame(true);
+}
+</script>
+
+<script>
+/* ---------- 상점 도착 (단독 배달) ---------- */
+function handleArrivalAtShop(call){
+  advanceTime(Math.round(call.distance * methodConfig[S.method].minPerKm));
+
+  let waitSec = 0;
+  if(call.cook==='조리중') waitSec = 4;
+  else if(call.cook==='조리대기') waitSec = 7;
+  else if(call.cook.includes('가짜')) waitSec = 6;
+
+  if(Math.random() < PICKUP_EVENT_CHANCE){
+    triggerPickupEvent(()=> showPickupWait(call, waitSec));
+    return;
+  }
+  showPickupWait(call, waitSec);
+}
+function showPickupWait(call, waitSec){
+  openModal(`<h3>🏪 상점 픽업</h3><p>상태: ${call.cook}</p>
+    <p id="pickupInfo">${waitSec>0 ? '대기 중... '+waitSec+'초' : '바로 픽업 가능!'}</p>`);
+  if(waitSec<=0){
+    advanceTime(WAIT_MINUTES[call.cook] || 0);
+    setTimeout(()=>startDeliveryStage(call), 500);
+    return;
+  }
+  runPickupTimer(waitSec, WAIT_MINUTES[call.cook] || 0, ()=> startDeliveryStage(call));
+}
+function startDeliveryStage(call){
+  closeModal();
+  const night = isNightTime(S.hour);
+  runMovementStage(`🚚 ${call.food} 배달 중`, call.distance, {police:true, accident:true, isNight:night},
+    ()=> finishDelivery(call));
+}
+function finishDelivery(call){
+  advanceTime(Math.round(call.distance * methodConfig[S.method].minPerKm));
+
+  const cfg = methodConfig[S.method];
+  let staminaCost = Math.round(call.distance * cfg.staminaPerKm);
+  let fuelOK = true;
+  if(S.method==='bike'){
+    const fuelCost = Math.round(call.distance*FUEL_PER_KM);
+    if(S.bike.fuel < fuelCost) fuelOK=false; else S.bike.fuel -= fuelCost;
+    S.bike.durability = Math.max(0, S.bike.durability - call.distance*0.5);
+  }
+  if(!S.infiniteStaminaToday) S.stamina = Math.max(0, S.stamina - staminaCost);
+
+  const misdeliveryChance = (S.stamina < 20 ? 0.4 : 0.05);
+  const misdelivered = !fuelOK || Math.random() < misdeliveryChance;
+  if(misdelivered){
+    const penalty = Math.round(call.fee*0.3);
+    S.money -= penalty;
+    logMsg(`❌ 오배달 발생! 클레임 환불 처리 (-${fmt(penalty)}) ${fuelOK?'(체력부족)':'(연료부족)'}`);
+  } else {
+    let earn = call.fee;
+    let tipMsg = '';
+    if(Math.random() < TIP_EVENT_CHANCE){
+      const tip = 1000 + Math.floor(Math.random()*2000);
+      earn += tip;
+      tipMsg = ` 🎁친절한 고객 팁 +${fmt(tip)}`;
+    }
+    S.money += earn;
+    logMsg(`✅ 배달 완료! +${fmt(earn)} (${call.food}, ${call.distance}km)${tipMsg}`);
+  }
+  saveGame(true); renderAll();
+}
+
+/* ---------- 이동 미니게임 ---------- */
+function runMovementStage(label, distanceKm, opts, onArrive){
+  openModal(`
+    <h3>${label}</h3>
+    <p class="game-hint">방향키/WASD 또는 아래 터치 버튼으로 캐릭터를 목적지(🚩)까지 이동시키세요!</p>
+    <canvas id="gameCanvas" width="480" height="260"></canvas>
+    <p id="gameDistanceInfo" class="game-hint"></p>
+    <div id="dpad">
+      <button class="dpad-btn dpad-up" data-key="ArrowUp">▲</button>
+      <button class="dpad-btn dpad-left" data-key="ArrowLeft">◀</button>
+      <button class="dpad-btn dpad-right" data-key="ArrowRight">▶</button>
+      <button class="dpad-btn dpad-down" data-key="ArrowDown">▼</button>
+    </div>
+    ${S.hasNavigation ? `
+    <div class="auto-toggle-box">
+      <label>🧭 자동배달 네비게이션
+        <input type="checkbox" id="autoToggleInGame" ${S.autoMoveEnabled?'checked':''} onchange="S.autoMoveEnabled=this.checked">
+      </label>
+    </div>` : `<p class="game-hint">(네비게이션을 구매하면 자동배달을 사용할 수 있습니다)</p>`}
+  `);
+  setupDpad();
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const cfg = methodConfig[S.method];
+  const cell = 5;
+  let player = {x:30, y:230};
+  let dest = {x: Math.min(450, 60 + distanceKm*18), y: 30 + Math.random()*190};
+  let rafId, frame=0, fined=false, accidentOccurred=false;
+  const wearHelmet = S.method==='bike' && S.bike.helmet && S.bike.wearHelmet;
+
+  function loop(){
+    frame++;
+    let dx=0, dy=0;
+
+    if(S.hasNavigation && S.autoMoveEnabled){
+      const angle = Math.atan2(dest.y-player.y, dest.x-player.x);
+      dx = Math.cos(angle)*cfg.speed;
+      dy = Math.sin(angle)*cfg.speed;
+    } else {
+      if(gameKeys['ArrowUp'] || gameKeys['KeyW']) dy -= cfg.speed;
+      if(gameKeys['ArrowDown'] || gameKeys['KeyS']) dy += cfg.speed;
+      if(gameKeys['ArrowLeft'] || gameKeys['KeyA']) dx -= cfg.speed;
+      if(gameKeys['ArrowRight'] || gameKeys['KeyD']) dx += cfg.speed;
+    }
+    player.x = Math.max(14, Math.min(466, player.x+dx));
+    player.y = Math.max(14, Math.min(246, player.y+dy));
+
+    ctx.clearRect(0,0,480,260);
+    ctx.fillStyle = opts.isNight ? '#1a1a2e' : '#3b3b55'; ctx.fillRect(0,0,480,260);
+    ctx.font = '24px sans-serif';
+    ctx.fillText('🚩', dest.x-12, dest.y+8);
+    drawPixelChar(ctx, buildCharRows(false, wearHelmet), player.x-4*cell, player.y-5*cell, cell);
+
+    const d = Math.hypot(player.x-dest.x, player.y-dest.y);
+    const info = document.getElementById('gameDistanceInfo');
+    if(info) info.innerText = (S.hasNavigation && S.autoMoveEnabled ? '🧭 자동배달 중... ' : '목적지까지: ') + Math.round(d) + 'px';
+
+    if(opts.police && S.method==='bike' && !fined && frame%90===0 && Math.random()<0.1){
+      fined = true;
+      const fine = wearHelmet ? 30000 : 50000;
+      S.money -= fine;
+      logMsg(`🚨 단속! 과태료 ${fmt(fine)} 납부${wearHelmet?'':' (헬멧 미착용)'}`);
+      renderStatusbar();
+    }
+
+    if(opts.accident && !accidentOccurred && frame%90===0){
+      const chance = opts.isNight ? 0.12 : 0.02;
+      if(Math.random() < chance){
+        accidentOccurred = true;
+        cancelAnimationFrame(rafId);
+        closeModal();
+        triggerAccident();
+        return;
+      }
+    }
+
+    if(d < 20){ cancelAnimationFrame(rafId); closeModal(); onArrive(); return; }
+    rafId = requestAnimationFrame(loop);
+  }
+  rafId = requestAnimationFrame(loop);
+}
+
+/* ---------- 모바일 터치 D패드 핸들러 ---------- */
+function setupDpad(){
+  document.querySelectorAll('.dpad-btn').forEach(btn=>{
+    const key = btn.dataset.key;
+    const press = (e)=>{ e.preventDefault(); gameKeys[key]=true; };
+    const release = (e)=>{ e.preventDefault(); gameKeys[key]=false; };
+    btn.addEventListener('pointerdown', press);
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointercancel', release);
+    btn.addEventListener('pointerleave', release);
+  });
+}
+
+/* ---------- 사고 이벤트 ---------- */
+function triggerAccident(){
+  const walkMsgs = ['어두워서 넘어졌다...', '미끄러져서 발목을 다쳤다...'];
+  const bikeMsgs = ['교통사고가 났다...', '오토바이가 미끄러졌다...'];
+  const msgs = S.method==='walk' ? walkMsgs : bikeMsgs;
+  const msg = msgs[Math.floor(Math.random()*msgs.length)];
+
+  S.sick = true; S.sickDaysLeft = 1;
+  if(!S.infiniteStaminaToday) S.stamina = Math.max(0, S.stamina-20);
+
+  openModal(`
+    <div class="accident-title">🚨 사고 발생!</div>
+    <div class="accident-box">
+      ${msg}<br><br>
+      너무 아파서 오늘 하루는 꼼짝없이 쉬어야 할 것 같다 🤕
+    </div>
+    <button onclick="closeModal(); nextDay();">확인</button>
+  `);
+  logMsg(`🤕 사고 발생: ${msg} (하루를 쉬게 되었습니다)`);
+  saveGame(true);
+}
+
+/* ===================== 방향키 + WASD 입력 (PC) ===================== */
+const gameKeys = {};
+document.addEventListener('keydown', (e)=>{
+  const key = e.key;
+  const code = e.code;
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(key)){
+    gameKeys[key] = true;
+    if(document.getElementById('gameCanvas')) e.preventDefault();
+  }
+  if(["KeyW","KeyA","KeyS","KeyD"].includes(code)){
+    gameKeys[code] = true;
+    if(document.getElementById('gameCanvas')) e.preventDefault();
+  }
+});
+document.addEventListener('keyup', (e)=>{
+  gameKeys[e.key] = false;
+  gameKeys[e.code] = false;
+});
+
+/* ===================== 휴식 ===================== */
+function restAtGosiwon(){
+  advanceTime(120);
+  S.stamina = Math.min(100, S.stamina + 20);
+  logMsg('🛏️ 휴식을 취했다. (2시간 소요, 체력 +20)');
+  saveGame(true); renderAll();
+}
+
+/* ===================== 알림 모달들 ===================== */
+function showCuteRentNotice(){
+  openModal(`
+    <div class="cute-title">🦝 너굴고시원 안내</div>
+    <div class="cute-box">
+      내일은 고시원 비용을 내는 날입니다! 🪙<br><br>
+      미리 ${fmt(GOSIWON_RENT)}을 준비해두세요~ 그렇지 않으면 쫓겨날 수도 있어요!
+    </div>
+    <button onclick="closeModal()">알겠어요!</button>
+  `);
+}
+function showFormerJobPayEvent(){
+  openModal(`
+    <div class="money-title">📩 입금 알림</div>
+    <div class="money-box">
+      전 직장에서 밀린 알바비가 입금되었습니다!<br><br>
+      <b>+${fmt(FORMER_JOB_PAY_AMOUNT)}</b> 💰<br><br>
+      그동안 고생하셨어요, 조금은 여유가 생겼네요 😊
+    </div>
+    <button onclick="closeModal()">확인</button>
+  `);
+}
+
+/* ===================== 고시원 랜덤 이벤트 (7종, 약 3일에 1번꼴) ===================== */
+function tryTriggerGosiwonEvent(){
+  if(Math.random() >= DAILY_EVENT_CHANCE) return false;
+  const events = [
+    'chicken','noise','clean','wallet','gift','blackout','parcel'
+  ];
+  const type = events[Math.floor(Math.random()*events.length)];
+
+  if(type==='chicken'){
+    S.infiniteStaminaToday = true;
+    openModal(`
+      <div class="event-title">🍗 고시원 이벤트</div>
+      <div class="event-box">고시원 주인이 치킨을 돌렸습니다!<br><br>오늘 하루는 체력이 무한대로 유지됩니다! 🎉</div>
+      <button onclick="closeModal(); renderAll();">신난다!</button>
+    `);
+    logMsg('🍗 고시원 주인이 치킨을 돌렸습니다! (오늘 하루 체력 무한)');
+    return true;
+  }
+
+  if(type==='noise'){
+    openModal(`
+      <div class="event-title">🔊 고시원 이벤트</div>
+      <div class="event-box">
+        층간소음으로 옆방이랑 싸웠습니다.<br><br>
+        옆방에게 사과하겠습니까?
+      </div>
+      <button onclick="resolveNoiseEvent(true)">YES (사과하기)</button>
+      <button onclick="resolveNoiseEvent(false)">NO (무시하기)</button>
+    `);
+    logMsg('🔊 층간소음으로 옆방과 다툼이 발생했습니다.');
+    return true;
+  }
+
+  if(type==='clean'){
+    S.stamina = Math.min(100, S.stamina+15);
+    openModal(`
+      <div class="event-title">🧹 고시원 이벤트</div>
+      <div class="event-box">고시원 아주머니가 방 청소를 도와주셨습니다!<br><br>체력이 회복되었습니다 (+15)</div>
+      <button onclick="closeModal(); renderAll();">감사합니다!</button>
+    `);
+    logMsg('🧹 방 청소 서비스 이벤트! (체력 +15)');
+    return true;
+  }
+
+  if(type==='wallet'){
+    openModal(`
+      <div class="event-title">👛 고시원 이벤트</div>
+      <div class="event-box">
+        복도에서 지갑을 하나 발견했습니다.<br><br>
+        어떻게 하시겠습니까?
+      </div>
+      <button onclick="resolveWalletEvent(true)">돌려주기 (+5,000원 사례금)</button>
+      <button onclick="resolveWalletEvent(false)">슬쩍하기 (+10,000원, 양심에 찔림)</button>
+    `);
+    logMsg('👛 복도에서 지갑을 발견했습니다.');
+    return true;
+  }
+
+  if(type==='gift'){
+    const gifts = [
+      {key:'pizzabox', label:'📦 피자박스', apply:()=>{ S.hasPizzaBox=true; }},
+      {key:'helmet', label:'🪖 헬멧', apply:()=>{ S.bike.helmet=true; }},
+      {key:'kimbap', label:'🍙 김밥 2개', apply:()=>{ S.food.kimbap+=2; }}
+    ];
+    const g = gifts[Math.floor(Math.random()*gifts.length)];
+    g.apply();
+    openModal(`
+      <div class="event-title">📦 고시원 이벤트</div>
+      <div class="event-box">이사가는 옆방 사람이 짐 정리하다 남은 ${g.label}를 선물로 주고 갔습니다!</div>
+      <button onclick="closeModal(); renderAll();">감사합니다!</button>
+    `);
+    logMsg(`📦 이사가는 옆방이 ${g.label}를 선물로 주었습니다!`);
+    return true;
+  }
+
+  if(type==='blackout'){
+    if(!S.infiniteStaminaToday) S.stamina = Math.max(0, S.stamina-10);
+    openModal(`
+      <div class="event-title">💡 고시원 이벤트</div>
+      <div class="event-box">갑자기 정전이 되어 밤새 불편하게 보냈습니다.<br><br>체력이 깎였습니다 (-10)</div>
+      <button onclick="closeModal(); renderAll();">아이고...</button>
+    `);
+    logMsg('💡 정전 사건 발생! (체력 -10)');
+    return true;
+  }
+
+  if(type==='parcel'){
+    S.stamina = Math.min(100, S.stamina+10);
+    openModal(`
+      <div class="event-title">📬 고시원 이벤트</div>
+      <div class="event-box">예전에 주문했던 택배가 도착했습니다!<br><br>기분이 좋아져서 체력이 회복되었습니다 (+10)</div>
+      <button onclick="closeModal(); renderAll();">좋아!</button>
+    `);
+    logMsg('📬 택배 도착 이벤트! (체력 +10)');
+    return true;
+  }
+  return false;
+}
+function resolveNoiseEvent(apologize){
+  closeModal();
+  if(apologize){
+    const foodTypes = ['kimbap','lunchbox'];
+    const t = foodTypes[Math.floor(Math.random()*foodTypes.length)];
+    S.food[t]++;
+    logMsg(`🙏 옆방에게 사과했습니다. 옆방이 ${t==='kimbap'?'🍙김밥':'🍱도시락'} 1개를 주었습니다.`);
+  } else {
+    S.grudgeNeighbor = true;
+    logMsg('😠 사과를 거절했습니다. 이제 옆방과 만나면 서로 노려보는 사이가 되었습니다.');
+  }
+  saveGame(true); renderAll();
+}
+function resolveWalletEvent(returnIt){
+  closeModal();
+  if(returnIt){
+    S.money += 5000;
+    logMsg('😇 지갑을 주인에게 돌려주고 사례금 5,000원을 받았습니다.');
+  } else {
+    S.money += 10000;
+    logMsg('😈 지갑을 슬쩍 챙겼습니다. (+10,000원, 양심에 찔립니다...)');
+  }
+  saveGame(true); renderAll();
+}
+
+/* ===================== 날짜 진행 ===================== */
+function nextDay(){
+  S.day++; S.rejectsToday=0; S.mealsEatenToday=0;
+  S.hour = 8; S.minute = 0; S.minutesSinceWake = 0;
+  S.infiniteStaminaToday = false;
+
+  const roll = Math.random();
+  S.weather = roll<0.2 ? (Math.random()<0.5?'rain':'snow') : 'clear';
+  S.stamina = Math.max(0, S.stamina-10);
+
+  if(S.sick){
+    S.sickDaysLeft--;
+    if(S.sickDaysLeft<=0){
+      S.sick = false;
+      logMsg('😊 몸이 다 나았다! 다시 활동할 수 있습니다.');
+    } else {
+      logMsg('🤒 아직 몸이 좋지 않다... 하루 더 쉬어야 한다.');
+    }
+  }
+
+  if(S.day === FORMER_JOB_PAY_DAY && !S.gotFormerJobPay){
+    S.gotFormerJobPay = true;
+    S.money += FORMER_JOB_PAY_AMOUNT;
+    showFormerJobPayEvent();
+    logMsg(`📩 전 직장 알바비 ${fmt(FORMER_JOB_PAY_AMOUNT)}이 입금되었습니다!`);
+  }
+
+  if(S.housing==='고시원'){
+    if(!S.sick) S.stamina = Math.min(100, S.stamina+40);
+
+    if(S.day % GOSIWON_CYCLE === 0){
+      if(S.money >= GOSIWON_RENT){
+        S.money -= GOSIWON_RENT;
+        logMsg(`🏠 너굴고시원 이용료 ${fmt(GOSIWON_RENT)}이 차감되었습니다.`);
+      } else {
+        triggerEviction();
+        return;
+      }
+    } else if((S.day+1) % GOSIWON_CYCLE === 0){
+      showCuteRentNotice();
+    }
+  }
+
+  logMsg(`새로운 날. 날씨: ${weatherLabel[S.weather]}`);
+  saveGame(true);
+
+  const eventTriggered = tryTriggerGosiwonEvent();
+  renderAll();
+  if(!eventTriggered){
+    // 이벤트 없으면 바로 화면 갱신 완료 상태
+  }
+}
+
+function triggerEviction(){
+  localStorage.removeItem(SAVE_KEY);
+  openModal(`
+    <div class="notice-title">🚪 쫓겨났습니다...</div>
+    <div class="notice-box">
+      너굴고시원 이용료(${fmt(GOSIWON_RENT)})를 내지 못해 쫓겨났습니다.<br><br>
+      게임을 다시 시작합니다.
+    </div>
+    <button onclick="location.reload()">타이틀로 돌아가기</button>
+  `);
+}
+</script>
+</body>
+</html>
